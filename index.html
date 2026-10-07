@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Renda BR · variável de localização (Censo 2022)</title>
+<meta name="description" content="Renda de vizinhança interpolada a partir do Censo 2022 do IBGE, para uso como variável de localização em avaliação de imóveis.">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+<div id="mapa" aria-label="Mapa"></div>
+
+<aside id="painel">
+  <header class="topo">
+    <div class="marca"><span class="logo" aria-hidden="true"></span>
+      <div><h1>Renda BR</h1><p class="sub">Variável de localização · Censo 2022</p></div>
+    </div>
+    <button id="recolher" class="icone" title="Recolher painel" aria-label="Recolher painel">⌄</button>
+  </header>
+
+  <nav class="abas" role="tablist">
+    <button role="tab" class="ativa" data-aba="consulta">Consulta</button>
+    <button role="tab" data-aba="lote">Planilha</button>
+    <button role="tab" data-aba="sobre">Sobre</button>
+  </nav>
+
+  <section id="aba-consulta" class="aba">
+    <form id="form-busca" class="busca" autocomplete="off">
+      <label for="coord">Coordenada do imóvel (latitude, longitude)</label>
+      <div class="linha">
+        <input id="coord" inputmode="decimal" placeholder="-23.551028, -46.638254">
+        <button type="submit" class="primario">Calcular</button>
+      </div>
+      <p class="dica">Ou clique no mapa. Use o <b>centro aproximado do lote</b>.</p>
+    </form>
+    <div id="status" class="status" role="status" aria-live="polite"></div>
+    <div id="resultado" class="resultado oculto"></div>
+  </section>
+
+  <section id="aba-lote" class="aba oculto">
+    <p>Envie uma planilha <b>.xlsx</b> ou <b>.csv</b> com as colunas <b>LATITUDE</b> e <b>LONGITUDE</b>
+      (ou uma coluna <b>COORDENADAS</b>) e, se quiser, uma coluna de identificação (<b>DADO</b>, <b>ID</b>, <b>AMOSTRA</b>…).</p>
+    <p class="dica">A planilha é processada no seu próprio navegador: o arquivo não é enviado a nenhum servidor.</p>
+    <label class="arquivo"><input id="arquivo" type="file" accept=".xlsx,.xlsm,.csv,.txt"><span id="arquivo-nome">Escolher arquivo…</span></label>
+    <button id="processar" class="primario largo">Processar planilha</button>
+    <div id="progresso" class="progresso oculto"><div></div></div>
+    <div id="status-lote" class="status" role="status" aria-live="polite"></div>
+    <button id="baixar" class="secundario largo oculto">Baixar planilha com resultados</button>
+  </section>
+
+  <section id="aba-sobre" class="aba oculto">
+    <h2>O que é o valor calculado</h2>
+    <p>É a <b>renda de vizinhança</b> do ponto: a média geométrica do <i>rendimento médio do responsável pelo domicílio</i>
+      (IBGE, Censo 2022, variável V06004, R$ de 2022) dos <b>8 setores censitários mais próximos</b>, com pesos que
+      diminuem suavemente com a distância até zero no 9º setor.</p>
+    <p>Em áreas urbanas, essa vizinhança tem tipicamente 400 a 700 m de raio; em áreas rurais, alguns quilômetros.
+      O raio usado aparece em cada resultado.</p>
+    <h2>Como escolher o ponto</h2>
+    <ol>
+      <li>Marque o centro aproximado do lote do imóvel.</li>
+      <li>Use 6 casas decimais (a ferramenta arredonda automaticamente).</li>
+      <li>Registre no laudo a coordenada usada e a versão exibida no resultado.</li>
+    </ol>
+    <p><a href="metodologia.html">Metodologia completa</a> · <a href="testes/index.html">Verificar o cálculo neste navegador</a></p>
+  </section>
+
+  <footer class="rodape"><span id="versao">Carregando…</span></footer>
+</aside>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="js/config.js"></script>
+<script src="js/k8.js"></script>
+<script src="js/planilha.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

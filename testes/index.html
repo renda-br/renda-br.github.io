@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Verificação do cálculo · Renda BR</title>
+<link rel="stylesheet" href="../css/estilo.css">
+<style>body{padding:24px;max-width:760px;margin:auto;background:#fff}pre{background:#f4f5f2;padding:12px;border-radius:8px;white-space:pre-wrap;font-size:.85rem}</style>
+</head><body>
+<h1>Verificação do cálculo</h1>
+<p>Esta página recalcula, no seu navegador, os pontos de teste oficiais desta versão e compara com os valores
+  da implementação de referência (Python). Todos devem coincidir ao centavo.</p>
+<button id="rodar" class="primario">Rodar verificação</button>
+<div id="progresso" class="progresso"><div></div></div>
+<pre id="saida">—</pre>
+<p><a href="../index.html">Voltar à ferramenta</a> · <a href="vetores_teste_v1.csv">Baixar os pontos de teste (CSV)</a></p>
+<script src="../js/config.js"></script>
+<script src="../js/k8.js"></script>
+<script>
+(async function () {
+  const BASE = '../' + (window.CONFIG.dados || 'dados/v1/');
+  async function carregar(c) {
+    const r = await fetch(BASE + c); let u8 = new Uint8Array(await r.arrayBuffer());
+    if (u8[0] === 0x1f && u8[1] === 0x8b) u8 = new Uint8Array(await new Response(new Blob([u8]).stream().pipeThrough(new DecompressionStream('gzip'))).arrayBuffer());
+    return u8;
+  }
+  document.getElementById('rodar').onclick = async () => {
+    const out = document.getElementById('saida'), barra = document.querySelector('#progresso div'); out.textContent = 'Carregando…';
+    const m = K8.criarMotor(carregar), idx = await m.iniciar();
+    const linhas = (await (await fetch('vetores_teste_' + idx.id + '.csv')).text()).trim().split(/\r?\n/).slice(1).map((l) => l.split(','));
+    let ok = 0; const falhas = []; const t0 = performance.now();
+    for (let i = 0; i < linhas.length; i++) {
+      const [lat, lon, tipo, cd, renda, rArr, raio] = linhas[i];
+      const st = await m.setor(+lat, +lon);
+      if (!cd) { st === null ? ok++ : falhas.push(`${lat},${lon}: esperado fora do Brasil`); }
+      else if (!st || st.cd_setor !== cd) falhas.push(`${lat},${lon}: setor diferente`);
+      else { const e = await m.estimar(+lat, +lon); (e.renda_centavos / 100).toFixed(2) === rArr && Math.abs(e.raio_m - +raio) < 0.01 ? ok++ : falhas.push(`${lat},${lon}: ${(e.renda_centavos / 100).toFixed(2)} ≠ ${rArr}`); }
+      if (i % 20 === 0) { barra.style.width = (100 * i / linhas.length) + '%'; out.textContent = `Verificando ${i} de ${linhas.length}…`; await new Promise((s) => setTimeout(s, 0)); }
+    }
+    barra.style.width = '100%';
+    out.textContent = `${idx.nome}\nPontos de teste: ${linhas.length}\nCoincidentes: ${ok}\nDiferentes: ${falhas.length}\nTempo: ${((performance.now() - t0) / 1000).toFixed(1)} s\n\n`
+      + (falhas.length ? 'RESULTADO: REPROVADO\n' + falhas.slice(0, 20).join('\n') : 'RESULTADO: APROVADO — este navegador reproduz exatamente a implementação de referência.');
+  };
+})();
+</script>
+</body></html>

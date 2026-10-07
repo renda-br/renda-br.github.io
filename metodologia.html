@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="pt-BR"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Metodologia · Renda BR (Censo 2022, método K8 v1)</title>
+<link rel="stylesheet" href="css/estilo.css">
+<style>
+  body{background:#fff} main{max-width:780px;margin:0 auto;padding:28px 20px 60px;line-height:1.6}
+  h1{font-size:1.6rem;margin:0 0 4px} h2{font-size:1.1rem;margin:28px 0 8px;color:var(--acento)}
+  p,li{font-size:.95rem;color:#2b332e} code,.f{font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:.88rem}
+  .f{display:block;background:#f4f5f2;border-radius:8px;padding:12px 14px;margin:10px 0;white-space:pre-wrap}
+  table{border-collapse:collapse;width:100%;font-size:.88rem;margin:8px 0} td,th{border-bottom:1px solid var(--linha);padding:6px 8px;text-align:left}
+  th{color:var(--suave);font-weight:600} .cit{border-left:3px solid var(--acento);padding:8px 14px;background:var(--acento-2);border-radius:0 8px 8px 0}
+</style></head>
+<body><main>
+<p><a href="index.html">← Voltar à ferramenta</a></p>
+<h1>Metodologia</h1>
+<p class="sub">Renda BR · Censo 2022 · método K8 v1</p>
+
+<h2>1. Finalidade</h2>
+<p>Fornecer uma <b>variável de localização objetiva e reprodutível</b> para avaliação de imóveis em todo o Brasil:
+  um único valor numérico por coordenada, obtido por regra fixa, que qualquer avaliador pode recalcular e chegar ao mesmo resultado.</p>
+
+<h2>2. Dados</h2>
+<ul>
+  <li><b>Variável:</b> V06004 — rendimento médio do responsável pelo domicílio, por setor censitário
+    (IBGE, Censo Demográfico 2022, Agregados por Setores Censitários — renda do responsável). Valores nominais de 2022.</li>
+  <li><b>Malha:</b> setores censitários do Censo 2022 (IBGE, BR_setores_CD2022), SIRGAS 2000.</li>
+  <li><b>Cobertura desta versão:</b> 468.099 setores; 449.531 com rendimento informado (pontos de cálculo).</li>
+</ul>
+
+<h2>3. Pontos de cálculo</h2>
+<p>Cada setor com rendimento é representado pelo <b>centroide de área</b> do seu polígono (incluindo buracos;
+  setores formados por várias partes têm centroide único, ponderado pela área de cada parte), calculado numa projeção
+  equirretangular local e arredondado para 7 casas decimais.</p>
+
+<h2>4. Cálculo no ponto</h2>
+<ol>
+  <li>A coordenada informada (latitude, longitude) é arredondada para <b>6 casas decimais</b>.</li>
+  <li>O ponto deve estar dentro de um setor censitário do Brasil (o setor é apenas informativo; não entra no cálculo).</li>
+  <li>Distância <i>d</i> entre o ponto e cada centroide: euclidiana em coordenadas geocêntricas (ECEF) do elipsoide GRS80,
+    altitude zero — equivalente à distância geodésica nas escalas de interesse e válida em todo o país, sem fusos.</li>
+  <li><b>H</b> = 9ª menor distância (raio da vizinhança).</li>
+  <li>Peso de cada centroide com <i>d &lt; H</i> (os 8 mais próximos): kernel quártico
+    <span class="f">w = (1 − (d/H)²)²</span></li>
+  <li>Valor no ponto (média geométrica ponderada):
+    <span class="f">Renda = exp( Σ w·ln(Rᵢ) / Σ w )</span>
+    onde Rᵢ é o V06004 do setor i. O resultado é arredondado a centavos.</li>
+</ol>
+<p>Não há fronteiras municipais ou estaduais: os vizinhos são os setores mais próximos, onde quer que estejam.
+  A superfície resultante é contínua, sem saltos em divisas e sem picos sobre os centroides.</p>
+
+<h2>5. Por que este método</h2>
+<p>Comparado em validação cruzada (cada setor previsto pelos demais) em SP, MG, RS e PA com o IDW por município
+  usado no protótipo, IDW sem fronteiras e variantes ponderadas por domicílios:</p>
+<table>
+  <tr><th>Critério</th><th>IDW por município (protótipo)</th><th>Kernel K8 (este método)</th></tr>
+  <tr><td>Erro mediano da validação cruzada</td><td>16,4% a 18,0%</td><td>15,5% a 16,7%</td></tr>
+  <tr><td>Viés mediano</td><td>+4,3% a +7,4%</td><td>+0,8% a +2,1%</td></tr>
+  <tr><td>Variação ao deslocar o ponto 25 m (p90)</td><td>5,4% (SP)</td><td>1,7% a 3,2%</td></tr>
+  <tr><td>Degrau na divisa municipal (mediana)</td><td>≈ 20%</td><td>0</td></tr>
+</table>
+<p>Raio de vizinhança típico (mediana): 430–720 m em áreas urbanas; 4–10 km em áreas rurais.</p>
+
+<h2>6. Interpretação e limites</h2>
+<ul>
+  <li>O valor representa a <b>vizinhança</b> do ponto, não o setor isolado; em mediana fica ~12% distante do valor do próprio setor.</li>
+  <li>Em áreas pouco povoadas o raio é de vários quilômetros e o valor é menos local — a ferramenta informa o raio em cada resultado.</li>
+  <li>É uma fotografia do Censo 2022, em valores nominais de 2022. Como variável de localização em modelos de regressão,
+    a correção monetária não altera o poder explicativo.</li>
+</ul>
+
+<h2>7. Como citar</h2>
+<p class="cit">Renda de vizinhança — Renda BR, Censo 2022, método K8 v1: média geométrica ponderada (kernel quártico adaptativo,
+  8 setores censitários mais próximos) do rendimento médio do responsável pelo domicílio (IBGE, Censo Demográfico 2022, V06004).
+  Valor calculado na coordenada [latitude, longitude].</p>
+</main></body></html>
