@@ -7,7 +7,7 @@ window.CONFIG = {
 
   // Mapa de fundo. Sem chave usa o OpenStreetMap. Para produção, recomenda-se uma chave
   // gratuita do CARTO (https://carto.com/basemaps/apikey/) — cole-a abaixo.
-  cartoApiKey: '',
+  cartoApiKey: 'cb1_4d4p_1_efdefd76d4241eefe08743e7',
 
   // Camada de satélite opcional (deixe vazio para não exibir). Use um provedor cujos termos
   // permitam o uso no seu site, por exemplo uma conta gratuita da MapTiler:
